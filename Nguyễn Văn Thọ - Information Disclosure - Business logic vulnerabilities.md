@@ -303,7 +303,7 @@ Vì cookie có tên là `notification` nên ta đoán nó có liên quan đến 
 
 Vậy nếu nhập email dạng: `administrator:time` thì ta được một mã encrypted cùng dạng với cookie của ta.
 
-Tuy nhiên không bypass được authentication, dòng chữ "Invalid email address: " được thêm vào trước khi mã hóa, nên giá trị mà ta dùng làm cookie `stay-logged-in` đó đã dư một số byte.
+Tuy nhiên không bypass được access control, dòng chữ "Invalid email address: " được thêm vào trước khi mã hóa, nên giá trị mà ta dùng làm cookie `stay-logged-in` đó đã dư một số byte.
 >![](https://i.imgur.com/IcQx3Qn.png)
 
 Để loại bỏ nó, ta cần xác định số byte mà chuỗi "Invalid email address: " chiếm - 23 Bytes
