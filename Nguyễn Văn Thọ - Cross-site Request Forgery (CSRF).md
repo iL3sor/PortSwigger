@@ -215,6 +215,50 @@ Chức năng live chat của trang web đang bị lỗi Cross-site WebSocket hij
 
 Chức năng thay đổi email của bài lab bị lỗi CSRF. Tìm cách thay đổi email của nạn nhân.
 
+Kiểm tra ta thấy trang web khi set cookie cho phiên đăng nhập, đã để `SameSite` có giá trị mặc định, tức `Lax`.
+
+> [color=#210b70] ![](https://i.imgur.com/M7mT4dc.png)
+
+Vì nó là `Lax` nên trang web chỉ include cookie trong các request cross-site với method là GET và nó phải là top-level navigation (navigation khiến thay đổi luôn trên url)
+
+Nghiên cứu kĩ thuật, ta thấy việc dùng giá trị `Lax` cho thuộc tính SameSite của cookie sẽ dẫn đến break SSO (single sign-on) [Tìm hiểu bài viết đính kèm link bên dưới].
+
+> [color=#210b70] Tham khảo: https://stackoverflow.com/questions/63402508/feasibility-of-sso-with-samesite-lax-cookies-only
+
+Theo tài liệu của PortSwigger, bài lab này phòng tránh việc break SSO bằng cách không áp dụng `SameSite=Lax` lên cookie trong 2 phút đầu khi người ta truy cập, điều đó dẫn tới trang web dễ bị tấn công CSRF trong khoảng thời gian này. Nếu thời gian quá 2p, `Lax` sẽ được áp dụng và trang web không đính kèm cookie trong các cross-site request
+
+Thêm vào đó nữa, chức năng thay đổi email của trang web lại không chứa csrf token nên tăng khả năng tấn công (nếu bypass được hạn chế của `SameSite`)
+
+Lỗ hổng ở đây bắt nguồn từ việc 2 phút không có `Lax` và chức năng thay đổi email không có CSRF token dẫn tới nó sẽ bị khai thác.
+
+Chú ý rằng mỗi lần truy cập vào đường dẫn `/social-login` ta sẽ được OAuth cấp session mới. Không quan tâm là ta có đang đăng nhập ở trang web (mà ta muốn vào) hay không.
+
+Mỗi lần refresh session token như vậy sẽ lộ ra khoảng 2p cho các cuộc tấn công CSRF như miêu tả bên trên.
+
+Viết lại script để điều hướng nạn nhân tới trang `/social-login` để refresh token, tạo khoản thời gian 2p, sau đó thực hiện CSRF.
+
+Sau 5s kể từ khi nạn nhân click vào điểm bất kì trên trang, payload CSRF sẽ được gọi để thực thi. Lúc này cookie sessiond đã được cấp mới, lưu trên browser và không có bất kì hạn chế nào.
+
+```javascript!
+<form method="POST" action="https://0ac1000a04bd84ccc0bd54ba005d0086.web-security-academy.net/my-account/change-email">
+    <input type="hidden" name="email" value="pwned@portswigger.net">
+</form>
+<p>Click me</p>
+<script>
+    window.onclick = () => {
+        window.open('https://0ac1000a04bd84ccc0bd54ba005d0086.web-security-academy.net/social-login');
+        setTimeout(changeEmail, 5000);
+    }
+
+    function changeEmail() {
+        document.forms[0].submit();
+    }
+</script>
+```
+
+
+
+> [color=#210b70] ![](https://i.imgur.com/p5BGmJX.png)
 
 
 <hr>
